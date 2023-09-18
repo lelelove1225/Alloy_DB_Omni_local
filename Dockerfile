@@ -1,6 +1,12 @@
 FROM debian:lts 
 
 # Install dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install alloydb-cli
 RUN apt-get update && apt-get install -y curl gnupg2
 RUN curl https://asia-apt.pkg.dev/doc/repo-signing-key.gpg | apt-key add -
 RUN echo "deb https://asia-apt.pkg.dev/projects/alloydb-omni alloydb-omni-apt main" \
@@ -15,3 +21,6 @@ RUN curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
     | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
 RUN apt-get update && apt-get install -y google-cloud-sdk
 
+# Check, configure, install and create directory
+# after install alloydb
+RUN mkdir /data && alloydb system-check && sudo alloydb database-server install --data-dir=/data

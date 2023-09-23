@@ -1,0 +1,50 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+    config.vm.box = "ubuntu/focal64"
+    config.vm.provider :libvirt do |libvirt|
+    libvirt.driver = "kvm"
+    libvirt.memory = "1024"
+    libvirt.cpus = 2
+  
+    # 雰囲気で書いている
+    config.vm.provision "shell", inline: <<-SHELL
+      # まず必要なやつ
+      apt-get update
+      apt-get install -y ca-certificates curl gnupg apt-transport-https
+      install -m 0755 -d /etc/apt/keyrings
+  
+      # Dockerは普通には入らないので、公式の手順に従う
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+      echo \
+        "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+        $(. /etc/os-release && echo "$VERSION_CODENAME") stable" > /etc/apt/sources.list.d/docker.list
+  
+      # どかどか入れる
+      apt-get update
+      apt-get install -y docker-ce docker-ce-cli containerd.io
+  
+      # AlloyDB CLI
+      curl https://asia-apt.pkg.dev/doc/repo-signing-key.gpg | apt-key add -
+      echo "deb https://asia-apt.pkg.dev/projects/alloydb-omni alloydb-omni-apt main" \
+          | tee -a /etc/apt/sources.list.d/artifact-registry.list
+      apt-get update
+      apt-get install -y alloydb-cli
+  
+      # Google Cloud CLI
+      echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
+          | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list
+      curl https://packages.cloud.google.com/apt/doc/apt-key.gpg \
+          | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add -
+      apt-get update
+      apt-get install -y google-cloud-sdk
+  
+      # AlloyDB setup
+      mkdir /data
+      alloydb system-check
+      sudo alloydb database-server install --data-dir=/data
+  
+    SHELL
+  end
+  
